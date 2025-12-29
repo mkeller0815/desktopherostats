@@ -678,14 +678,18 @@
                 }
             });
 
+            // Calculate category totals
+            const regularTotal = Object.values(regularMobs).reduce((sum, kills) => sum + kills, 0);
+            const bossTotal = Object.values(bosses).reduce((sum, kills) => sum + kills, 0);
+
             // Display regular mobs
-            displayMobTable('Regular', regularMobs, killStats.total);
+            displayMobTable('Regular', regularMobs, regularTotal);
 
             // Display bosses
-            displayMobTable('Bosses', bosses, killStats.total);
+            displayMobTable('Bosses', bosses, bossTotal);
         }
 
-        function displayMobTable(type, mobs, totalKills) {
+        function displayMobTable(type, mobs, categoryTotal) {
             const headerId = type === 'Bosses' ? 'killStatsBossesHead' : 'killStatsRegularHead';
             const bodyId = type === 'Bosses' ? 'killStatsBossesBody' : 'killStatsRegularBody';
 
@@ -715,7 +719,6 @@
 
             // Create rows
             let bodyHTML = '';
-            let categoryTotal = 0;
 
             mapOrder.forEach(mapName => {
                 if (mobsByMap[mapName]) {
@@ -736,11 +739,9 @@
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                             .join(' ');
 
-                        const percentage = totalKills > 0
-                            ? ((kills / totalKills) * 100).toFixed(1)
+                        const percentage = categoryTotal > 0
+                            ? ((kills / categoryTotal) * 100).toFixed(1)
                             : 0;
-
-                        categoryTotal += kills;
 
                         bodyHTML += `
                             <tr>
@@ -753,13 +754,12 @@
                 }
             });
 
-            // Add total row
-            const totalPercentage = totalKills > 0 ? ((categoryTotal / totalKills) * 100).toFixed(1) : 0;
+            // Add total row (always 100% now)
             bodyHTML += `
                 <tr style="font-weight: bold; background: rgba(102, 126, 234, 0.1);">
                     <td class="map-name">TOTAL ${type.toUpperCase()}</td>
                     <td style="text-align: center;">${categoryTotal.toLocaleString()}</td>
-                    <td style="text-align: center;">${totalPercentage}%</td>
+                    <td style="text-align: center;">100.0%</td>
                 </tr>
             `;
 

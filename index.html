@@ -1,1 +1,513 @@
-desktop_heros_viewer.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desktop Heroes Save File Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-section.drag-over {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .file-input-wrapper {
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #c33;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.visible {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #5568d3;
+        }
+
+        th.map-header {
+            text-align: left;
+            padding-left: 20px;
+        }
+
+        td {
+            padding: 12px 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        td.map-name {
+            text-align: left;
+            padding-left: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9ff;
+        }
+
+        tr:hover {
+            background: #e8ebff;
+        }
+
+        .hero-group {
+            border-left: 2px solid #667eea;
+        }
+
+        .kills-col {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .upload-section {
+                padding: 20px;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Desktop Heroes Save File Viewer</h1>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".pxt" />
+                <label for="fileInput" class="file-input-label">Choose .pxt File</label>
+            </div>
+            <div class="file-name" id="fileName">or drag and drop a file here</div>
+        </div>
+
+        <div id="error"></div>
+
+        <div class="results" id="results">
+            <div class="section">
+                <h2>Character Levels</h2>
+                <div class="stats-grid" id="levelsGrid"></div>
+            </div>
+
+            <div class="section">
+                <h2>Total Kills per Hero</h2>
+                <div class="stats-grid" id="killsGrid"></div>
+            </div>
+
+            <div class="section">
+                <h2>Map Progress</h2>
+                <div class="table-wrapper">
+                    <table id="mapTable">
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const heroes = ['edric', 'serewyn', 'corin', 'alaric'];
+
+        // File upload handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('uploadSection');
+        const fileName = document.getElementById('fileName');
+        const errorDiv = document.getElementById('error');
+        const resultsDiv = document.getElementById('results');
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('drag-over');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            fileName.textContent = `Loading: ${file.name}`;
+            errorDiv.innerHTML = '';
+            resultsDiv.classList.remove('visible');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const base64Data = e.target.result;
+                    const jsonString = atob(base64Data);
+                    const data = JSON.parse(jsonString);
+
+                    fileName.textContent = `Loaded: ${file.name}`;
+                    processData(data);
+                } catch (err) {
+                    showError(`Error processing file: ${err.message}`);
+                    fileName.textContent = 'or drag and drop a file here';
+                }
+            };
+            reader.onerror = function() {
+                showError('Error reading file');
+                fileName.textContent = 'or drag and drop a file here';
+            };
+            reader.readAsText(file);
+        }
+
+        function showError(message) {
+            errorDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function processData(data) {
+            try {
+                const levels = extractCharacterLevels(data);
+                const mapData = extractMapData(data);
+                const totalKills = extractTotalKills(data);
+
+                displayResults(levels, mapData, totalKills);
+                resultsDiv.classList.add('visible');
+            } catch (err) {
+                showError(`Error extracting data: ${err.message}`);
+            }
+        }
+
+        function extractCharacterLevels(data) {
+            const levels = {};
+            if (data.gameStore && data.gameStore.characters) {
+                heroes.forEach(hero => {
+                    const charKey = `char_${hero}`;
+                    if (data.gameStore.characters[charKey]) {
+                        levels[hero] = data.gameStore.characters[charKey].level || 0;
+                    } else {
+                        levels[hero] = 0;
+                    }
+                });
+            }
+            return levels;
+        }
+
+        function extractMapData(data) {
+            const mapData = {};
+            if (data.progressStore && data.progressStore.map) {
+                heroes.forEach(hero => {
+                    const charKey = `char_${hero}`;
+                    mapData[hero] = {};
+
+                    if (data.progressStore.map[charKey]) {
+                        const charMaps = data.progressStore.map[charKey];
+                        Object.keys(charMaps).forEach(mapKey => {
+                            if (mapKey.startsWith('map:')) {
+                                const mapName = mapKey.replace('map:', '');
+                                const mapInfo = charMaps[mapKey];
+                                mapData[hero][mapName] = {
+                                    maxLevel: mapInfo.maxLevel || 0,
+                                    totalKillCount: mapInfo.totalKillCount || 0,
+                                    killCount: mapInfo.killCount || 0,
+                                    furtherKillCount: mapInfo.furtherKillCount || 0
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+            return mapData;
+        }
+
+        function extractTotalKills(data) {
+            const kills = {};
+            if (data.progressStore && data.progressStore.kill && data.progressStore.kill.byCharacter) {
+                heroes.forEach(hero => {
+                    const charKey = `char_${hero}`;
+                    kills[hero] = data.progressStore.kill.byCharacter[charKey] || 0;
+                });
+            }
+            return kills;
+        }
+
+        function displayResults(levels, mapData, totalKills) {
+            // Display character levels and kills combined
+            const levelsGrid = document.getElementById('levelsGrid');
+            levelsGrid.innerHTML = '';
+            heroes.forEach(hero => {
+                const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
+                const level = levels[hero] || 0;
+                const kills = totalKills[hero] || 0;
+                levelsGrid.innerHTML += `
+                    <div class="stat-card">
+                        <h3>${heroName}</h3>
+                        <div class="value">Level ${level}</div>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 10px;">${kills.toLocaleString()} kills</div>
+                    </div>
+                `;
+            });
+
+            // Display total kills
+            const killsGrid = document.getElementById('killsGrid');
+            killsGrid.innerHTML = '';
+            heroes.forEach(hero => {
+                const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
+                const kills = totalKills[hero] || 0;
+                killsGrid.innerHTML += `
+                    <div class="stat-card">
+                        <h3>${heroName}</h3>
+                        <div class="value">${kills.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+
+            // Get all unique maps
+            const allMaps = new Set();
+            Object.values(mapData).forEach(heroMaps => {
+                Object.keys(heroMaps).forEach(map => allMaps.add(map));
+            });
+
+            // Define custom map order
+            const mapOrder = ['forest', 'desert', 'jungle', 'water', 'village', 'graveyard',
+                             'swamp', 'castle', 'dungeon', 'cave', 'inferno', 'snow', 'mountain'];
+
+            // Filter maps with at least one kill, maintain custom order
+            const mapsWithKills = [];
+
+            // First add maps in the defined order
+            mapOrder.forEach(mapName => {
+                if (allMaps.has(mapName)) {
+                    const hasKills = heroes.some(hero => {
+                        return mapData[hero][mapName] && mapData[hero][mapName].totalKillCount > 0;
+                    });
+                    if (hasKills) {
+                        mapsWithKills.push(mapName);
+                    }
+                }
+            });
+
+            // Then add any maps not in the predefined order (in case new maps exist)
+            Array.from(allMaps).sort().forEach(mapName => {
+                if (!mapOrder.includes(mapName)) {
+                    const hasKills = heroes.some(hero => {
+                        return mapData[hero][mapName] && mapData[hero][mapName].totalKillCount > 0;
+                    });
+                    if (hasKills) {
+                        mapsWithKills.push(mapName);
+                    }
+                }
+            });
+
+            // Build table
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+
+            // Create header
+            let headerHTML = '<tr><th class="map-header">Map</th>';
+            heroes.forEach(hero => {
+                const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
+                headerHTML += `
+                    <th class="hero-group">${heroName} Lvl</th>
+                    <th class="kills-col">${heroName} Kills</th>
+                `;
+            });
+            headerHTML += '</tr>';
+            tableHead.innerHTML = headerHTML;
+
+            // Create rows
+            let bodyHTML = '';
+            mapsWithKills.forEach(mapName => {
+                const mapNameCap = mapName.charAt(0).toUpperCase() + mapName.slice(1);
+                let row = `<tr><td class="map-name">${mapNameCap}</td>`;
+
+                heroes.forEach(hero => {
+                    if (mapData[hero][mapName]) {
+                        const maxLevel = mapData[hero][mapName].maxLevel;
+                        const kills = mapData[hero][mapName].totalKillCount;
+                        row += `
+                            <td class="hero-group">${maxLevel}</td>
+                            <td class="kills-col">${kills.toLocaleString()}</td>
+                        `;
+                    } else {
+                        row += `
+                            <td class="hero-group">N/A</td>
+                            <td class="kills-col">0</td>
+                        `;
+                    }
+                });
+
+                row += '</tr>';
+                bodyHTML += row;
+            });
+            tableBody.innerHTML = bodyHTML;
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+</html>

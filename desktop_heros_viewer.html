@@ -131,6 +131,27 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .stat-card .hero-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            display: block;
+            text-align: center;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
         }
 
         .stat-card h3 {
@@ -516,6 +537,35 @@
             return killStats;
         }
 
+        function getHeroIcon(heroName) {
+            const icons = {
+                'edric': '⚔️',    // Warrior
+                'serewyn': '🏹',  // Archer/Hunter
+                'corin': '🧙',    // Wizard
+                'alaric': '🗡️'   // Assassin/Rogue
+            };
+            return icons[heroName.toLowerCase()] || '🦸';
+        }
+
+        function getMapIcon(mapName) {
+            const icons = {
+                'forest': '🌲',
+                'desert': '🏜️',
+                'jungle': '🌴',
+                'water': '🌊',
+                'village': '🏘️',
+                'graveyard': '⚰️',
+                'swamp': '🐊',
+                'castle': '🏰',
+                'dungeon': '🗝️',
+                'cave': '🦇',
+                'inferno': '🔥',
+                'snow': '❄️',
+                'mountain': '⛰️'
+            };
+            return icons[mapName.toLowerCase()] || '🗺️';
+        }
+
         function displayResults(levels, mapData, totalKills, killStats) {
             // Display character overview with level, location, and kills
             const levelsGrid = document.getElementById('levelsGrid');
@@ -533,11 +583,15 @@
                     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(' ');
 
+                const heroIcon = getHeroIcon(hero);
+                const mapIcon = getMapIcon(location.replace('map:', ''));
+
                 levelsGrid.innerHTML += `
                     <div class="stat-card">
+                        <div class="hero-icon">${heroIcon}</div>
                         <h3>${heroName}</h3>
                         <div class="value">Level ${level}</div>
-                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">📍 ${mapName}</div>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">${mapIcon} ${mapName}</div>
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">⚔️ ${kills.toLocaleString()} kills</div>
                     </div>
                 `;
@@ -600,7 +654,8 @@
             let bodyHTML = '';
             mapsWithKills.forEach(mapName => {
                 const mapNameCap = mapName.charAt(0).toUpperCase() + mapName.slice(1);
-                let row = `<tr><td class="map-name">${mapNameCap}</td>`;
+                const mapIcon = getMapIcon(mapName);
+                let row = `<tr><td class="map-name">${mapIcon} ${mapNameCap}</td>`;
 
                 heroes.forEach(hero => {
                     if (mapData[hero][mapName]) {
@@ -720,10 +775,11 @@
 
             mapOrder.forEach(mapName => {
                 if (mobsByMap[mapName]) {
-                    // Add map separator row
+                    // Add map separator row with icon
+                    const mapIcon = getMapIcon(mapName.toLowerCase());
                     bodyHTML += `
                         <tr>
-                            <td colspan="3" class="map-separator">📍 ${mapName}</td>
+                            <td colspan="3" class="map-separator">${mapIcon} ${mapName}</td>
                         </tr>
                     `;
 

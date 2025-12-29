@@ -45,6 +45,12 @@ The script displays:
 
 ## HTML Viewer Usage
 
+### Online (GitHub Pages)
+
+Visit the live viewer at: **https://mkeller0815.github.io/desktopherostats/**
+
+### Local Usage
+
 Simply open `desktop_heros_viewer.html` (or `index.html`) in any modern web browser and:
 - Click the button to select a `.pxt` file, or
 - Drag and drop a `.pxt` file onto the upload area

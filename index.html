@@ -147,11 +147,32 @@
         }
 
         .stat-card .hero-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 10px;
             display: block;
-            text-align: center;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
             filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .map-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .map-separator .map-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+            vertical-align: middle;
         }
 
         .stat-card h3 {
@@ -538,32 +559,37 @@
         }
 
         function getHeroIcon(heroName) {
-            const icons = {
-                'edric': '⚔️',    // Warrior
-                'serewyn': '🏹',  // Archer/Hunter
-                'corin': '🗡️',   // Assassin/Rogue
-                'alaric': '🧙'   // Wizard
+            // Avatar sprite positions (from left to right in avatars.png)
+            // Each character is approximately 32x32 pixels
+            const positions = {
+                'edric': 1,      // Warrior (2nd sprite)
+                'serewyn': 2,    // Archer (3rd sprite)
+                'corin': 3,      // Rogue (4th sprite)
+                'alaric': 4      // Wizard (5th sprite)
             };
-            return icons[heroName.toLowerCase()] || '🦸';
+            const pos = positions[heroName.toLowerCase()] || 0;
+            return `<img src="assets/avatars.png" class="hero-icon" style="object-fit: none; object-position: -${pos * 32}px 0; width: 32px; height: 32px;">`;
         }
 
         function getMapIcon(mapName) {
-            const icons = {
-                'forest': '🌲',
-                'desert': '🏜️',
-                'jungle': '🌴',
-                'water': '🌊',
-                'village': '🏘️',
-                'graveyard': '⚰️',
-                'swamp': '🐊',
-                'castle': '🏰',
-                'dungeon': '🗝️',
-                'cave': '🦇',
-                'inferno': '🔥',
-                'snow': '❄️',
-                'mountain': '⛰️'
+            const maps = {
+                'forest': 'forest.png',
+                'desert': 'desert.png',
+                'jungle': 'jungle.png',
+                'water': 'water.png',
+                'village': 'village.png',
+                'graveyard': 'graveyard.png',
+                'swamp': 'swamp.png',
+                'castle': 'castle.png',
+                'dungeon': 'dungeon.png',
+                'cave': 'cave.png',
+                'snow': 'snow.png'
             };
-            return icons[mapName.toLowerCase()] || '🗺️';
+            const mapFile = maps[mapName.toLowerCase()];
+            if (mapFile) {
+                return `<img src="assets/${mapFile}" class="map-icon" alt="${mapName}">`;
+            }
+            return '🗺️';
         }
 
         function displayResults(levels, mapData, totalKills, killStats) {
@@ -588,7 +614,7 @@
 
                 levelsGrid.innerHTML += `
                     <div class="stat-card">
-                        <div class="hero-icon">${heroIcon}</div>
+                        ${heroIcon}
                         <h3>${heroName}</h3>
                         <div class="value">Level ${level}</div>
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">${mapIcon} ${mapName}</div>

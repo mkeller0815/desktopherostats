@@ -76,7 +76,9 @@ def extract_map_data(data):
                             'maxLevel': map_info.get('maxLevel', 0),
                             'totalKillCount': map_info.get('totalKillCount', 0),
                             'killCount': map_info.get('killCount', 0),
-                            'furtherKillCount': map_info.get('furtherKillCount', 0)
+                            'furtherKillCount': map_info.get('furtherKillCount', 0),
+                            'difficulty': map_info.get('difficulty', 0),
+                            'distance': map_info.get('distance', 0)
                         }
 
     return map_data
@@ -104,9 +106,9 @@ def print_results(levels, map_data, total_kills):
     """Print extracted data in a formatted way."""
     heroes = ["edric", "serewyn", "corin", "alaric"]
 
-    print("=" * 150)
+    print("=" * 170)
     print("DESKTOP HEROES - CHARACTER DATA")
-    print("=" * 150)
+    print("=" * 170)
 
     # Character Levels
     print("\nCHARACTER LEVELS:")
@@ -126,7 +128,7 @@ def print_results(levels, map_data, total_kills):
 
     # Map Data - Filter maps with at least one kill
     print("\nMAP PROGRESS:")
-    print("=" * 150)
+    print("=" * 170)
 
     # Get all unique map names and filter those with at least one kill
     all_maps = set()
@@ -162,17 +164,26 @@ def print_results(levels, map_data, total_kills):
             if has_kills:
                 maps_with_kills.append(map_name)
 
-    # Print table header with Level/Kills for each hero
-    header = f"{'Map':<15} |"
+    # Print table header with Difficulty, Distance, Level, and Kills for each hero
+    header = f"{'Map':<15} | {'Difficulty':>10} | {'Distance':>12} |"
     for hero in heroes:
         hero_name = hero.capitalize()
         header += f" {hero_name + ' Lvl':>12} | {hero_name + ' Kills':>14} |"
     print(header)
-    print("-" * 150)
+    print("-" * 170)
 
     # Print data for each map
     for map_name in maps_with_kills:
-        row = f"{map_name.capitalize():<15} |"
+        # Get difficulty and distance from first hero that has this map (they should be the same for all heroes)
+        difficulty = 0
+        distance = 0
+        for hero in heroes:
+            if map_name in map_data.get(hero, {}):
+                difficulty = map_data[hero][map_name]['difficulty']
+                distance = map_data[hero][map_name]['distance']
+                break
+
+        row = f"{map_name.capitalize():<15} | {difficulty:>10} | {distance:>12,} |"
         for hero in heroes:
             if map_name in map_data.get(hero, {}):
                 max_level = map_data[hero][map_name]['maxLevel']
@@ -182,7 +193,7 @@ def print_results(levels, map_data, total_kills):
                 row += f" {'N/A':>12} | {0:>14} |"
         print(row)
 
-    print("\n" + "=" * 150)
+    print("\n" + "=" * 170)
 
 
 def main():

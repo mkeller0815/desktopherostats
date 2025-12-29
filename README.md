@@ -60,7 +60,13 @@ Simply open `desktop_heros_viewer.html` (or `index.html`) in any modern web brow
 - Drag-and-drop file upload
 - Tabbed interface with multiple views:
   - **Map Progress**: Hero levels and kills per map
-  - **Kill Statistics**: Detailed mob kill counts and percentages
+  - **Regular Mobs**: Detailed kill statistics for all regular enemies
+    - Grouped by map location with visual separators
+    - Sorted by kill count within each map
+    - Shows total kills and percentage
+  - **Bosses**: Separate view for boss kill statistics
+    - Organized by map
+    - Boss names cleaned and formatted
 - Client-side processing (data never leaves your computer)
 - Works offline - no external dependencies
 - Mobile-friendly

@@ -58,6 +58,9 @@ Simply open `desktop_heros_viewer.html` (or `index.html`) in any modern web brow
 ### Features
 - Beautiful, responsive UI with gradient design
 - Drag-and-drop file upload
+- Tabbed interface with multiple views:
+  - **Map Progress**: Hero levels and kills per map
+  - **Kill Statistics**: Detailed mob kill counts and percentages
 - Client-side processing (data never leaves your computer)
 - Works offline - no external dependencies
 - Mobile-friendly

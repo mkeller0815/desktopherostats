@@ -199,6 +199,46 @@
             background: rgba(102, 126, 234, 0.05);
         }
 
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab.active {
+            color: #764ba2;
+            border-bottom-color: #764ba2;
+            background: rgba(118, 75, 162, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -248,12 +288,27 @@
             </div>
 
             <div class="section">
-                <h2>Map Progress</h2>
-                <div class="table-wrapper">
-                    <table id="mapTable">
-                        <thead id="tableHead"></thead>
-                        <tbody id="tableBody"></tbody>
-                    </table>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('mapProgress')">Map Progress</button>
+                    <button class="tab" onclick="switchTab('killStats')">Kill Statistics</button>
+                </div>
+
+                <div id="mapProgress" class="tab-content active">
+                    <div class="table-wrapper">
+                        <table id="mapTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="killStats" class="tab-content">
+                    <div class="table-wrapper">
+                        <table id="killStatsTable">
+                            <thead id="killStatsHead"></thead>
+                            <tbody id="killStatsBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -261,6 +316,25 @@
 
     <script>
         const heroes = ['edric', 'serewyn', 'corin', 'alaric'];
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
 
         // File upload handling
         const fileInput = document.getElementById('fileInput');
@@ -332,8 +406,9 @@
                 const levels = extractCharacterLevels(data);
                 const mapData = extractMapData(data);
                 const totalKills = extractTotalKills(data);
+                const killStats = extractKillStats(data);
 
-                displayResults(levels, mapData, totalKills);
+                displayResults(levels, mapData, totalKills, killStats);
                 resultsDiv.classList.add('visible');
             } catch (err) {
                 showError(`Error extracting data: ${err.message}`);
@@ -393,7 +468,30 @@
             return kills;
         }
 
-        function displayResults(levels, mapData, totalKills) {
+        function extractKillStats(data) {
+            const killStats = {
+                byMob: {},
+                total: 0
+            };
+
+            if (data.progressStore && data.progressStore.kill) {
+                const killData = data.progressStore.kill;
+
+                // Extract kills by mob
+                if (killData.byMob) {
+                    killStats.byMob = killData.byMob;
+                }
+
+                // Extract total
+                if (killData.total) {
+                    killStats.total = killData.total;
+                }
+            }
+
+            return killStats;
+        }
+
+        function displayResults(levels, mapData, totalKills, killStats) {
             // Display character levels and kills combined
             const levelsGrid = document.getElementById('levelsGrid');
             levelsGrid.innerHTML = '';
@@ -503,6 +601,57 @@
                 bodyHTML += row;
             });
             tableBody.innerHTML = bodyHTML;
+
+            // Display kill statistics table
+            displayKillStats(killStats, totalKills);
+        }
+
+        function displayKillStats(killStats, totalKills) {
+            const killStatsHead = document.getElementById('killStatsHead');
+            const killStatsBody = document.getElementById('killStatsBody');
+
+            // Create header
+            let headerHTML = '<tr><th class="map-header">Mob Type</th>';
+            headerHTML += '<th>Total Kills</th>';
+            headerHTML += '<th>Percentage</th>';
+            headerHTML += '</tr>';
+            killStatsHead.innerHTML = headerHTML;
+
+            // Sort mobs by kill count (descending)
+            const mobEntries = Object.entries(killStats.byMob).sort((a, b) => b[1] - a[1]);
+
+            // Create rows
+            let bodyHTML = '';
+            mobEntries.forEach(([mobKey, kills]) => {
+                // Clean up mob name (remove "mob:" prefix and format)
+                const mobName = mobKey.replace('mob:', '').replace(/_/g, ' ')
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+
+                const percentage = killStats.total > 0
+                    ? ((kills / killStats.total) * 100).toFixed(1)
+                    : 0;
+
+                bodyHTML += `
+                    <tr>
+                        <td class="map-name">${mobName}</td>
+                        <td style="text-align: center;">${kills.toLocaleString()}</td>
+                        <td style="text-align: center;">${percentage}%</td>
+                    </tr>
+                `;
+            });
+
+            // Add total row
+            bodyHTML += `
+                <tr style="font-weight: bold; background: rgba(102, 126, 234, 0.1);">
+                    <td class="map-name">TOTAL</td>
+                    <td style="text-align: center;">${killStats.total.toLocaleString()}</td>
+                    <td style="text-align: center;">100%</td>
+                </tr>
+            `;
+
+            killStatsBody.innerHTML = bodyHTML;
         }
 
         function capitalize(str) {

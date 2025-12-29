@@ -347,6 +347,50 @@
             background: linear-gradient(135deg, #4a7c59 0%, #2d5a3d 100%);
         }
 
+        /* Comparison styles */
+        .comparison-value {
+            display: inline-block;
+        }
+
+        .old-value {
+            color: #666;
+            font-size: 0.85em;
+            margin-right: 4px;
+        }
+
+        .value-increased {
+            color: #2d8659;
+            font-weight: bold;
+        }
+
+        .value-decreased {
+            color: #c9302c;
+            font-weight: bold;
+        }
+
+        .value-unchanged {
+            color: #333;
+        }
+
+        .upload-slots {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .upload-slot {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+
+        .upload-slot h3 {
+            color: #4a7c59;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
         /* Tabs */
         .tabs {
             display: flex;
@@ -426,12 +470,29 @@
         </div>
         <h1>Save File Viewer</h1>
 
-        <div class="upload-section" id="uploadSection">
-            <div class="file-input-wrapper">
-                <input type="file" id="fileInput" accept=".pxt" />
-                <label for="fileInput" class="file-input-label">Choose .pxt File</label>
+        <div class="upload-section">
+            <div class="upload-slots">
+                <div class="upload-slot">
+                    <h3>Current Save</h3>
+                    <div id="uploadSection1" class="upload-section" style="padding: 20px;">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput1" accept=".pxt" />
+                            <label for="fileInput1" class="file-input-label">Choose File</label>
+                        </div>
+                        <div class="file-name" id="fileName1">or drag and drop</div>
+                    </div>
+                </div>
+                <div class="upload-slot">
+                    <h3>Previous Save (Optional)</h3>
+                    <div id="uploadSection2" class="upload-section" style="padding: 20px;">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput2" accept=".pxt" />
+                            <label for="fileInput2" class="file-input-label">Choose File</label>
+                        </div>
+                        <div class="file-name" id="fileName2">or drag and drop</div>
+                    </div>
+                </div>
             </div>
-            <div class="file-name" id="fileName">or drag and drop a file here</div>
         </div>
 
         <div id="error"></div>
@@ -607,44 +668,70 @@
         }
 
         // File upload handling
-        const fileInput = document.getElementById('fileInput');
-        const uploadSection = document.getElementById('uploadSection');
-        const fileName = document.getElementById('fileName');
+        const fileInput1 = document.getElementById('fileInput1');
+        const fileInput2 = document.getElementById('fileInput2');
+        const uploadSection1 = document.getElementById('uploadSection1');
+        const uploadSection2 = document.getElementById('uploadSection2');
+        const fileName1 = document.getElementById('fileName1');
+        const fileName2 = document.getElementById('fileName2');
         const errorDiv = document.getElementById('error');
         const resultsDiv = document.getElementById('results');
 
-        fileInput.addEventListener('change', handleFileSelect);
+        let currentData = null;
+        let previousData = null;
 
-        // Drag and drop
-        uploadSection.addEventListener('dragover', (e) => {
+        fileInput1.addEventListener('change', (e) => handleFileSelect(e, 1));
+        fileInput2.addEventListener('change', (e) => handleFileSelect(e, 2));
+
+        // Drag and drop for first upload
+        uploadSection1.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadSection.classList.add('drag-over');
+            uploadSection1.classList.add('drag-over');
         });
 
-        uploadSection.addEventListener('dragleave', () => {
-            uploadSection.classList.remove('drag-over');
+        uploadSection1.addEventListener('dragleave', () => {
+            uploadSection1.classList.remove('drag-over');
         });
 
-        uploadSection.addEventListener('drop', (e) => {
+        uploadSection1.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadSection.classList.remove('drag-over');
+            uploadSection1.classList.remove('drag-over');
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                handleFile(files[0]);
+                handleFile(files[0], 1);
             }
         });
 
-        function handleFileSelect(e) {
+        // Drag and drop for second upload
+        uploadSection2.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection2.classList.add('drag-over');
+        });
+
+        uploadSection2.addEventListener('dragleave', () => {
+            uploadSection2.classList.remove('drag-over');
+        });
+
+        uploadSection2.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection2.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0], 2);
+            }
+        });
+
+        function handleFileSelect(e, slot) {
             const file = e.target.files[0];
             if (file) {
-                handleFile(file);
+                handleFile(file, slot);
             }
         }
 
-        function handleFile(file) {
-            fileName.textContent = `Loading: ${file.name}`;
+        function handleFile(file, slot) {
+            const fileNameEl = slot === 1 ? fileName1 : fileName2;
+            fileNameEl.textContent = `Loading: ${file.name}`;
             errorDiv.innerHTML = '';
-            resultsDiv.classList.remove('visible');
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -653,16 +740,25 @@
                     const jsonString = atob(base64Data);
                     const data = JSON.parse(jsonString);
 
-                    fileName.textContent = `Loaded: ${file.name}`;
-                    processData(data);
+                    fileNameEl.textContent = `Loaded: ${file.name}`;
+
+                    if (slot === 1) {
+                        currentData = data;
+                    } else {
+                        previousData = data;
+                    }
+
+                    if (currentData) {
+                        processData(currentData, previousData);
+                    }
                 } catch (err) {
-                    showError(`Error processing file: ${err.message}`);
-                    fileName.textContent = 'or drag and drop a file here';
+                    showError(`Error processing file ${slot}: ${err.message}`);
+                    fileNameEl.textContent = 'or drag and drop';
                 }
             };
             reader.onerror = function() {
-                showError('Error reading file');
-                fileName.textContent = 'or drag and drop a file here';
+                showError(`Error reading file ${slot}`);
+                fileNameEl.textContent = 'or drag and drop';
             };
             reader.readAsText(file);
         }
@@ -671,17 +767,52 @@
             errorDiv.innerHTML = `<div class="error">${message}</div>`;
         }
 
-        function processData(data) {
+        function formatComparisonValue(currentValue, previousValue, isNumeric = true) {
+            if (previousValue === null || previousValue === undefined) {
+                return isNumeric ? currentValue.toLocaleString() : currentValue;
+            }
+
+            const current = isNumeric ? currentValue : parseFloat(currentValue) || 0;
+            const previous = isNumeric ? previousValue : parseFloat(previousValue) || 0;
+
+            let colorClass = 'value-unchanged';
+            if (current > previous) {
+                colorClass = 'value-increased';
+            } else if (current < previous) {
+                colorClass = 'value-decreased';
+            }
+
+            const displayCurrent = isNumeric ? current.toLocaleString() : current;
+            const displayPrevious = isNumeric ? previous.toLocaleString() : previous;
+
+            if (current === previous) {
+                return displayCurrent;
+            }
+
+            return `<span class="comparison-value"><span class="old-value">(${displayPrevious})</span><span class="${colorClass}">${displayCurrent}</span></span>`;
+        }
+
+        function processData(data, previousDataParam = null) {
             try {
                 const levels = extractCharacterLevels(data);
                 const mapData = extractMapData(data);
                 const totalKills = extractTotalKills(data);
                 const killStats = extractKillStats(data);
 
+                let prevLevels = null;
+                let prevMapData = null;
+                let prevTotalKills = null;
+
+                if (previousDataParam) {
+                    prevLevels = extractCharacterLevels(previousDataParam);
+                    prevMapData = extractMapData(previousDataParam);
+                    prevTotalKills = extractTotalKills(previousDataParam);
+                }
+
                 // Store mapData globally for modal access
                 globalMapData = mapData;
 
-                displayResults(levels, mapData, totalKills, killStats);
+                displayResults(levels, mapData, totalKills, killStats, prevLevels, prevMapData, prevTotalKills);
                 resultsDiv.classList.add('visible');
             } catch (err) {
                 showError(`Error extracting data: ${err.message}`);
@@ -807,7 +938,7 @@
             return '🗺️';
         }
 
-        function displayResults(levels, mapData, totalKills, killStats) {
+        function displayResults(levels, mapData, totalKills, killStats, prevLevels = null, prevMapData = null, prevTotalKills = null) {
             // Display character overview with level, location, and kills
             const levelsGrid = document.getElementById('levelsGrid');
             levelsGrid.innerHTML = '';
@@ -818,6 +949,9 @@
                 const location = heroData.location || 'Unknown';
                 const kills = totalKills[hero] || 0;
 
+                const prevLevel = prevLevels ? (prevLevels[hero]?.level || 0) : null;
+                const prevKills = prevTotalKills ? (prevTotalKills[hero] || 0) : null;
+
                 // Clean up location (remove "map:" prefix and capitalize)
                 const mapName = location.replace('map:', '')
                     .split('_')
@@ -827,13 +961,16 @@
                 const heroIcon = getHeroIcon(hero);
                 const mapIcon = getMapIcon(location.replace('map:', ''));
 
+                const levelDisplay = formatComparisonValue(level, prevLevel);
+                const killsDisplay = formatComparisonValue(kills, prevKills);
+
                 levelsGrid.innerHTML += `
                     <div class="stat-card">
                         ${heroIcon}
                         <h3>${heroName}</h3>
-                        <div class="value">Level ${level}</div>
+                        <div class="value">Level ${levelDisplay}</div>
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">${mapIcon} ${mapName}</div>
-                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">⚔️ ${kills.toLocaleString()} kills</div>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">⚔️ ${killsDisplay} kills</div>
                     </div>
                 `;
             });
@@ -902,9 +1039,18 @@
                     if (mapData[hero][mapName]) {
                         const maxLevel = mapData[hero][mapName].maxLevel;
                         const kills = mapData[hero][mapName].totalKillCount;
+
+                        const prevLevel = prevMapData && prevMapData[hero] && prevMapData[hero][mapName]
+                            ? prevMapData[hero][mapName].maxLevel : null;
+                        const prevKills = prevMapData && prevMapData[hero] && prevMapData[hero][mapName]
+                            ? prevMapData[hero][mapName].totalKillCount : null;
+
+                        const levelDisplay = formatComparisonValue(maxLevel, prevLevel);
+                        const killsDisplay = formatComparisonValue(kills, prevKills);
+
                         row += `
-                            <td class="hero-group">${maxLevel}</td>
-                            <td class="kills-col">${kills.toLocaleString()}</td>
+                            <td class="hero-group">${levelDisplay}</td>
+                            <td class="kills-col">${killsDisplay}</td>
                         `;
                     } else {
                         row += `

@@ -291,13 +291,8 @@
 
         <div class="results" id="results">
             <div class="section">
-                <h2>Character Levels</h2>
+                <h2>Character Overview</h2>
                 <div class="stats-grid" id="levelsGrid"></div>
-            </div>
-
-            <div class="section">
-                <h2>Total Kills per Hero</h2>
-                <div class="stats-grid" id="killsGrid"></div>
             </div>
 
             <div class="section">
@@ -444,9 +439,16 @@
                 heroes.forEach(hero => {
                     const charKey = `char_${hero}`;
                     if (data.gameStore.characters[charKey]) {
-                        levels[hero] = data.gameStore.characters[charKey].level || 0;
+                        const charData = data.gameStore.characters[charKey];
+                        levels[hero] = {
+                            level: charData.level || 0,
+                            location: charData.location || 'Unknown'
+                        };
                     } else {
-                        levels[hero] = 0;
+                        levels[hero] = {
+                            level: 0,
+                            location: 'Unknown'
+                        };
                     }
                 });
             }
@@ -515,32 +517,28 @@
         }
 
         function displayResults(levels, mapData, totalKills, killStats) {
-            // Display character levels and kills combined
+            // Display character overview with level, location, and kills
             const levelsGrid = document.getElementById('levelsGrid');
             levelsGrid.innerHTML = '';
             heroes.forEach(hero => {
                 const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
-                const level = levels[hero] || 0;
+                const heroData = levels[hero] || { level: 0, location: 'Unknown' };
+                const level = heroData.level || 0;
+                const location = heroData.location || 'Unknown';
                 const kills = totalKills[hero] || 0;
+
+                // Clean up location (remove "map:" prefix and capitalize)
+                const mapName = location.replace('map:', '')
+                    .split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+
                 levelsGrid.innerHTML += `
                     <div class="stat-card">
                         <h3>${heroName}</h3>
                         <div class="value">Level ${level}</div>
-                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 10px;">${kills.toLocaleString()} kills</div>
-                    </div>
-                `;
-            });
-
-            // Display total kills
-            const killsGrid = document.getElementById('killsGrid');
-            killsGrid.innerHTML = '';
-            heroes.forEach(hero => {
-                const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
-                const kills = totalKills[hero] || 0;
-                killsGrid.innerHTML += `
-                    <div class="stat-card">
-                        <h3>${heroName}</h3>
-                        <div class="value">${kills.toLocaleString()}</div>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 8px;">📍 ${mapName}</div>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">⚔️ ${kills.toLocaleString()} kills</div>
                     </div>
                 `;
             });

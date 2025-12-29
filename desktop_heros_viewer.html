@@ -191,6 +191,80 @@
             vertical-align: middle;
         }
 
+        /* Map detail modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #4a7c59;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4a7c59;
+        }
+
+        .modal-header .map-icon {
+            width: 48px;
+            height: 48px;
+            margin-right: 15px;
+        }
+
+        .modal-header h2 {
+            color: #4a7c59;
+            margin: 0;
+            font-size: 2em;
+        }
+
+        .map-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .map-link:hover {
+            color: #4a7c59;
+        }
+
         .stat-card h3 {
             font-size: 1.1em;
             margin-bottom: 10px;
@@ -239,6 +313,18 @@
             padding-left: 20px;
             font-weight: bold;
             color: #333;
+        }
+
+        .map-link {
+            color: #4a7c59;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .map-link:hover {
+            color: #2d5a3d;
+            text-decoration: underline;
         }
 
         tr:nth-child(even) {
@@ -393,8 +479,21 @@
         </div>
     </div>
 
+    <!-- Map Detail Modal -->
+    <div id="mapModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeMapModal()">&times;</span>
+            <div class="modal-header">
+                <div id="modalMapIcon"></div>
+                <h2 id="modalMapName"></h2>
+            </div>
+            <div id="modalMapStats"></div>
+        </div>
+    </div>
+
     <script>
         const heroes = ['edric', 'serewyn', 'corin', 'alaric'];
+        let globalMapData = null; // Store map data for modal access
 
         // Tab switching function
         function switchTab(tabName) {
@@ -413,6 +512,98 @@
 
             // Add active class to clicked tab
             event.target.classList.add('active');
+        }
+
+        // Modal functions
+        function showMapDetails(mapName) {
+            if (!globalMapData) return;
+
+            const modal = document.getElementById('mapModal');
+            const modalMapName = document.getElementById('modalMapName');
+            const modalMapIcon = document.getElementById('modalMapIcon');
+            const modalMapStats = document.getElementById('modalMapStats');
+
+            // Set map name and icon
+            const mapNameCap = mapName.charAt(0).toUpperCase() + mapName.slice(1);
+            modalMapName.textContent = mapNameCap;
+            modalMapIcon.innerHTML = getMapIcon(mapName);
+
+            // Build stats table with heroes as columns
+            let tableHTML = '<table class="stats-table" style="width: 100%; margin-top: 20px;"><thead><tr>';
+            tableHTML += '<th style="text-align: left;">Stat</th>';
+
+            heroes.forEach(hero => {
+                const heroName = hero.charAt(0).toUpperCase() + hero.slice(1);
+                const heroIcon = getHeroIcon(hero);
+                tableHTML += `<th>${heroIcon} ${heroName}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+
+            // Difficulty row
+            tableHTML += '<tr><td><strong>Difficulty</strong></td>';
+            heroes.forEach(hero => {
+                const difficulty = globalMapData[hero][mapName]?.difficulty || 0;
+                tableHTML += `<td>${difficulty}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            // Distance row
+            tableHTML += '<tr><td><strong>Distance</strong></td>';
+            heroes.forEach(hero => {
+                const distance = globalMapData[hero][mapName]?.distance || 0;
+                tableHTML += `<td>${distance.toLocaleString()}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            // Max Level row
+            tableHTML += '<tr><td><strong>Max Level</strong></td>';
+            heroes.forEach(hero => {
+                const maxLevel = globalMapData[hero][mapName]?.maxLevel || 0;
+                tableHTML += `<td>${maxLevel}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            // Kill Count row
+            tableHTML += '<tr><td><strong>Kill Count</strong></td>';
+            heroes.forEach(hero => {
+                const kills = globalMapData[hero][mapName]?.killCount || 0;
+                tableHTML += `<td>${kills.toLocaleString()}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            // Further Kill Count row
+            tableHTML += '<tr><td><strong>Further Kills</strong></td>';
+            heroes.forEach(hero => {
+                const furtherKills = globalMapData[hero][mapName]?.furtherKillCount || 0;
+                tableHTML += `<td>${furtherKills.toLocaleString()}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            // Total Kill Count row
+            tableHTML += '<tr><td><strong>Total Kills</strong></td>';
+            heroes.forEach(hero => {
+                const totalKills = globalMapData[hero][mapName]?.totalKillCount || 0;
+                tableHTML += `<td>${totalKills.toLocaleString()}</td>`;
+            });
+            tableHTML += '</tr>';
+
+            tableHTML += '</tbody></table>';
+            modalMapStats.innerHTML = tableHTML;
+
+            // Show modal
+            modal.style.display = 'block';
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('mapModal');
+            if (event.target === modal) {
+                closeMapModal();
+            }
         }
 
         // File upload handling
@@ -487,6 +678,9 @@
                 const totalKills = extractTotalKills(data);
                 const killStats = extractKillStats(data);
 
+                // Store mapData globally for modal access
+                globalMapData = mapData;
+
                 displayResults(levels, mapData, totalKills, killStats);
                 resultsDiv.classList.add('visible');
             } catch (err) {
@@ -533,7 +727,9 @@
                                     maxLevel: mapInfo.maxLevel || 0,
                                     totalKillCount: mapInfo.totalKillCount || 0,
                                     killCount: mapInfo.killCount || 0,
-                                    furtherKillCount: mapInfo.furtherKillCount || 0
+                                    furtherKillCount: mapInfo.furtherKillCount || 0,
+                                    difficulty: mapInfo.difficulty || 0,
+                                    distance: mapInfo.distance || 0
                                 };
                             }
                         });
@@ -700,7 +896,7 @@
             mapsWithKills.forEach(mapName => {
                 const mapNameCap = mapName.charAt(0).toUpperCase() + mapName.slice(1);
                 const mapIcon = getMapIcon(mapName);
-                let row = `<tr><td class="map-name">${mapIcon} ${mapNameCap}</td>`;
+                let row = `<tr><td class="map-name"><a href="#" class="map-link" onclick="showMapDetails('${mapName}'); return false;">${mapIcon} ${mapNameCap}</a></td>`;
 
                 heroes.forEach(hero => {
                     if (mapData[hero][mapName]) {

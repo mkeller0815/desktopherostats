@@ -11,8 +11,10 @@ This project provides tools to extract and visualize character data from Desktop
 
 ## Features
 
-- **Character Levels**: Shows the level of all 4 heroes (Edric, Serewyn, Corin, Alaric)
-- **Total Kills**: Displays total kills for each hero across all maps
+- **Character Overview**: Comprehensive hero information showing:
+  - Current level
+  - Current map location
+  - Total kills across all maps
 - **Map Progress**: Shows maximum level reached and kill count per hero for each map
 - **Custom Map Order**: Maps displayed in game progression order
 - **No External Dependencies**: Both tools work standalone with no external libraries

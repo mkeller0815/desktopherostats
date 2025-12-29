@@ -243,6 +243,15 @@
             display: block;
         }
 
+        .map-separator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            text-align: left;
+            padding: 10px 20px !important;
+            font-size: 1.1em;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -294,7 +303,8 @@
             <div class="section">
                 <div class="tabs">
                     <button class="tab active" onclick="switchTab('mapProgress')">Map Progress</button>
-                    <button class="tab" onclick="switchTab('killStats')">Kill Statistics</button>
+                    <button class="tab" onclick="switchTab('killStatsRegular')">Regular Mobs</button>
+                    <button class="tab" onclick="switchTab('killStatsBosses')">Bosses</button>
                 </div>
 
                 <div id="mapProgress" class="tab-content active">
@@ -306,11 +316,20 @@
                     </div>
                 </div>
 
-                <div id="killStats" class="tab-content">
+                <div id="killStatsRegular" class="tab-content">
                     <div class="table-wrapper">
-                        <table id="killStatsTable">
-                            <thead id="killStatsHead"></thead>
-                            <tbody id="killStatsBody"></tbody>
+                        <table id="killStatsRegularTable">
+                            <thead id="killStatsRegularHead"></thead>
+                            <tbody id="killStatsRegularBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="killStatsBosses" class="tab-content">
+                    <div class="table-wrapper">
+                        <table id="killStatsBossesTable">
+                            <thead id="killStatsBossesHead"></thead>
+                            <tbody id="killStatsBossesBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -610,52 +629,141 @@
             displayKillStats(killStats, totalKills);
         }
 
+        function getMobMap(mobKey) {
+            // Map mobs to their respective maps based on naming patterns
+            const mobName = mobKey.toLowerCase();
+
+            if (mobName.includes('slime') || mobName.includes('twig') || mobName.includes('leshy') ||
+                mobName.includes('wood_warrior') || mobName.includes('fungus') || mobName.includes('fum_g')) {
+                return 'Forest';
+            }
+            if (mobName.includes('orc') || mobName.includes('scorpion') || mobName.includes('cobra') ||
+                mobName.includes('serpent') || mobName.includes('mummy')) {
+                return 'Desert';
+            }
+            if (mobName.includes('porcu') || mobName.includes('spider') || mobName.includes('plant') ||
+                mobName.includes('panda') || mobName.includes('kong')) {
+                return 'Jungle';
+            }
+            if (mobName.includes('crab') || mobName.includes('fish') || mobName.includes('turtle')) {
+                return 'Water';
+            }
+            if (mobName.includes('swamp') || mobName.includes('frog')) {
+                return 'Swamp';
+            }
+            if (mobName.includes('ghost') || mobName.includes('skeleton') || mobName.includes('zombie') ||
+                mobName.includes('witch')) {
+                return 'Graveyard';
+            }
+            if (mobName.includes('knight') || mobName.includes('guard') || mobName.includes('king')) {
+                return 'Castle';
+            }
+            if (mobName.includes('bat') || mobName.includes('rat') || mobName.includes('goblin')) {
+                return 'Dungeon';
+            }
+
+            return 'Other';
+        }
+
         function displayKillStats(killStats, totalKills) {
-            const killStatsHead = document.getElementById('killStatsHead');
-            const killStatsBody = document.getElementById('killStatsBody');
+            // Separate bosses and regular mobs
+            const bosses = {};
+            const regularMobs = {};
+
+            Object.entries(killStats.byMob).forEach(([mobKey, kills]) => {
+                if (mobKey.includes('boss_')) {
+                    bosses[mobKey] = kills;
+                } else {
+                    regularMobs[mobKey] = kills;
+                }
+            });
+
+            // Display regular mobs
+            displayMobTable('Regular', regularMobs, killStats.total);
+
+            // Display bosses
+            displayMobTable('Bosses', bosses, killStats.total);
+        }
+
+        function displayMobTable(type, mobs, totalKills) {
+            const headerId = type === 'Bosses' ? 'killStatsBossesHead' : 'killStatsRegularHead';
+            const bodyId = type === 'Bosses' ? 'killStatsBossesBody' : 'killStatsRegularBody';
+
+            const tableHead = document.getElementById(headerId);
+            const tableBody = document.getElementById(bodyId);
 
             // Create header
             let headerHTML = '<tr><th class="map-header">Mob Type</th>';
             headerHTML += '<th>Total Kills</th>';
             headerHTML += '<th>Percentage</th>';
             headerHTML += '</tr>';
-            killStatsHead.innerHTML = headerHTML;
+            tableHead.innerHTML = headerHTML;
 
-            // Sort mobs by kill count (descending)
-            const mobEntries = Object.entries(killStats.byMob).sort((a, b) => b[1] - a[1]);
+            // Group mobs by map
+            const mobsByMap = {};
+            Object.entries(mobs).forEach(([mobKey, kills]) => {
+                const map = getMobMap(mobKey);
+                if (!mobsByMap[map]) {
+                    mobsByMap[map] = [];
+                }
+                mobsByMap[map].push([mobKey, kills]);
+            });
+
+            // Sort maps in game order
+            const mapOrder = ['Forest', 'Desert', 'Jungle', 'Water', 'Village', 'Graveyard',
+                             'Swamp', 'Castle', 'Dungeon', 'Cave', 'Inferno', 'Snow', 'Mountain', 'Other'];
 
             // Create rows
             let bodyHTML = '';
-            mobEntries.forEach(([mobKey, kills]) => {
-                // Clean up mob name (remove "mob:" prefix and format)
-                const mobName = mobKey.replace('mob:', '').replace(/_/g, ' ')
-                    .split(' ')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ');
+            let categoryTotal = 0;
 
-                const percentage = killStats.total > 0
-                    ? ((kills / killStats.total) * 100).toFixed(1)
-                    : 0;
+            mapOrder.forEach(mapName => {
+                if (mobsByMap[mapName]) {
+                    // Add map separator row
+                    bodyHTML += `
+                        <tr>
+                            <td colspan="3" class="map-separator">📍 ${mapName}</td>
+                        </tr>
+                    `;
 
-                bodyHTML += `
-                    <tr>
-                        <td class="map-name">${mobName}</td>
-                        <td style="text-align: center;">${kills.toLocaleString()}</td>
-                        <td style="text-align: center;">${percentage}%</td>
-                    </tr>
-                `;
+                    // Sort mobs within map by kill count
+                    mobsByMap[mapName].sort((a, b) => b[1] - a[1]);
+
+                    // Add mob rows
+                    mobsByMap[mapName].forEach(([mobKey, kills]) => {
+                        const mobName = mobKey.replace('mob:', '').replace('boss_', '').replace(/_/g, ' ')
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+
+                        const percentage = totalKills > 0
+                            ? ((kills / totalKills) * 100).toFixed(1)
+                            : 0;
+
+                        categoryTotal += kills;
+
+                        bodyHTML += `
+                            <tr>
+                                <td class="map-name">${mobName}</td>
+                                <td style="text-align: center;">${kills.toLocaleString()}</td>
+                                <td style="text-align: center;">${percentage}%</td>
+                            </tr>
+                        `;
+                    });
+                }
             });
 
             // Add total row
+            const totalPercentage = totalKills > 0 ? ((categoryTotal / totalKills) * 100).toFixed(1) : 0;
             bodyHTML += `
                 <tr style="font-weight: bold; background: rgba(102, 126, 234, 0.1);">
-                    <td class="map-name">TOTAL</td>
-                    <td style="text-align: center;">${killStats.total.toLocaleString()}</td>
-                    <td style="text-align: center;">100%</td>
+                    <td class="map-name">TOTAL ${type.toUpperCase()}</td>
+                    <td style="text-align: center;">${categoryTotal.toLocaleString()}</td>
+                    <td style="text-align: center;">${totalPercentage}%</td>
                 </tr>
             `;
 
-            killStatsBody.innerHTML = bodyHTML;
+            tableBody.innerHTML = bodyHTML;
         }
 
         function capitalize(str) {

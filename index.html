@@ -353,7 +353,7 @@
         }
 
         .old-value {
-            color: #666;
+            color: #999;
             font-size: 0.85em;
             margin-right: 4px;
         }
@@ -473,7 +473,7 @@
         <div class="upload-section">
             <div class="upload-slots">
                 <div class="upload-slot">
-                    <h3>Current Save</h3>
+                    <h3>First Save (Baseline)</h3>
                     <div id="uploadSection1" class="upload-section" style="padding: 20px;">
                         <div class="file-input-wrapper">
                             <input type="file" id="fileInput1" accept=".pxt" />
@@ -483,7 +483,7 @@
                     </div>
                 </div>
                 <div class="upload-slot">
-                    <h3>Previous Save (Optional)</h3>
+                    <h3>Second Save (Optional)</h3>
                     <div id="uploadSection2" class="upload-section" style="padding: 20px;">
                         <div class="file-input-wrapper">
                             <input type="file" id="fileInput2" accept=".pxt" />
@@ -555,6 +555,7 @@
     <script>
         const heroes = ['edric', 'serewyn', 'corin', 'alaric'];
         let globalMapData = null; // Store map data for modal access
+        let globalPrevMapData = null; // Store previous map data for modal comparison
 
         // Tab switching function
         function switchTab(tabName) {
@@ -604,7 +605,10 @@
             tableHTML += '<tr><td><strong>Difficulty</strong></td>';
             heroes.forEach(hero => {
                 const difficulty = globalMapData[hero][mapName]?.difficulty || 0;
-                tableHTML += `<td>${difficulty}</td>`;
+                const prevDifficulty = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].difficulty : null;
+                const difficultyDisplay = formatComparisonValue(difficulty, prevDifficulty);
+                tableHTML += `<td>${difficultyDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -612,7 +616,10 @@
             tableHTML += '<tr><td><strong>Distance</strong></td>';
             heroes.forEach(hero => {
                 const distance = globalMapData[hero][mapName]?.distance || 0;
-                tableHTML += `<td>${distance.toLocaleString()}</td>`;
+                const prevDistance = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].distance : null;
+                const distanceDisplay = formatComparisonValue(distance, prevDistance);
+                tableHTML += `<td>${distanceDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -620,7 +627,10 @@
             tableHTML += '<tr><td><strong>Max Level</strong></td>';
             heroes.forEach(hero => {
                 const maxLevel = globalMapData[hero][mapName]?.maxLevel || 0;
-                tableHTML += `<td>${maxLevel}</td>`;
+                const prevMaxLevel = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].maxLevel : null;
+                const maxLevelDisplay = formatComparisonValue(maxLevel, prevMaxLevel);
+                tableHTML += `<td>${maxLevelDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -628,7 +638,10 @@
             tableHTML += '<tr><td><strong>Kill Count</strong></td>';
             heroes.forEach(hero => {
                 const kills = globalMapData[hero][mapName]?.killCount || 0;
-                tableHTML += `<td>${kills.toLocaleString()}</td>`;
+                const prevKills = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].killCount : null;
+                const killsDisplay = formatComparisonValue(kills, prevKills);
+                tableHTML += `<td>${killsDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -636,7 +649,10 @@
             tableHTML += '<tr><td><strong>Further Kills</strong></td>';
             heroes.forEach(hero => {
                 const furtherKills = globalMapData[hero][mapName]?.furtherKillCount || 0;
-                tableHTML += `<td>${furtherKills.toLocaleString()}</td>`;
+                const prevFurtherKills = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].furtherKillCount : null;
+                const furtherKillsDisplay = formatComparisonValue(furtherKills, prevFurtherKills);
+                tableHTML += `<td>${furtherKillsDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -644,7 +660,10 @@
             tableHTML += '<tr><td><strong>Total Kills</strong></td>';
             heroes.forEach(hero => {
                 const totalKills = globalMapData[hero][mapName]?.totalKillCount || 0;
-                tableHTML += `<td>${totalKills.toLocaleString()}</td>`;
+                const prevTotalKills = globalPrevMapData && globalPrevMapData[hero] && globalPrevMapData[hero][mapName]
+                    ? globalPrevMapData[hero][mapName].totalKillCount : null;
+                const totalKillsDisplay = formatComparisonValue(totalKills, prevTotalKills);
+                tableHTML += `<td>${totalKillsDisplay}</td>`;
             });
             tableHTML += '</tr>';
 
@@ -743,12 +762,16 @@
                     fileNameEl.textContent = `Loaded: ${file.name}`;
 
                     if (slot === 1) {
-                        currentData = data;
+                        previousData = data; // First file is the baseline (shown in parentheses)
+                        if (currentData) {
+                            // If second file already loaded, reprocess with first as baseline
+                            processData(currentData, previousData);
+                        } else {
+                            // Show first file data without comparison
+                            processData(data, null);
+                        }
                     } else {
-                        previousData = data;
-                    }
-
-                    if (currentData) {
+                        currentData = data; // Second file is the new data (main display)
                         processData(currentData, previousData);
                     }
                 } catch (err) {
@@ -802,17 +825,20 @@
                 let prevLevels = null;
                 let prevMapData = null;
                 let prevTotalKills = null;
+                let prevKillStats = null;
 
                 if (previousDataParam) {
                     prevLevels = extractCharacterLevels(previousDataParam);
                     prevMapData = extractMapData(previousDataParam);
                     prevTotalKills = extractTotalKills(previousDataParam);
+                    prevKillStats = extractKillStats(previousDataParam);
                 }
 
                 // Store mapData globally for modal access
                 globalMapData = mapData;
+                globalPrevMapData = prevMapData;
 
-                displayResults(levels, mapData, totalKills, killStats, prevLevels, prevMapData, prevTotalKills);
+                displayResults(levels, mapData, totalKills, killStats, prevLevels, prevMapData, prevTotalKills, prevKillStats);
                 resultsDiv.classList.add('visible');
             } catch (err) {
                 showError(`Error extracting data: ${err.message}`);
@@ -938,7 +964,7 @@
             return '🗺️';
         }
 
-        function displayResults(levels, mapData, totalKills, killStats, prevLevels = null, prevMapData = null, prevTotalKills = null) {
+        function displayResults(levels, mapData, totalKills, killStats, prevLevels = null, prevMapData = null, prevTotalKills = null, prevKillStats = null) {
             // Display character overview with level, location, and kills
             const levelsGrid = document.getElementById('levelsGrid');
             levelsGrid.innerHTML = '';
@@ -1066,7 +1092,7 @@
             tableBody.innerHTML = bodyHTML;
 
             // Display kill statistics table
-            displayKillStats(killStats, totalKills);
+            displayKillStats(killStats, totalKills, prevKillStats, prevTotalKills);
         }
 
         function getMobMap(mobKey) {
@@ -1105,7 +1131,7 @@
             return 'Other';
         }
 
-        function displayKillStats(killStats, totalKills) {
+        function displayKillStats(killStats, totalKills, prevKillStats = null, prevTotalKills = null) {
             // Separate bosses and regular mobs
             const bosses = {};
             const regularMobs = {};
@@ -1118,18 +1144,32 @@
                 }
             });
 
+            // Separate previous data if available
+            let prevBosses = {};
+            let prevRegularMobs = {};
+
+            if (prevKillStats && prevKillStats.byMob) {
+                Object.entries(prevKillStats.byMob).forEach(([mobKey, kills]) => {
+                    if (mobKey.includes('boss_')) {
+                        prevBosses[mobKey] = kills;
+                    } else {
+                        prevRegularMobs[mobKey] = kills;
+                    }
+                });
+            }
+
             // Calculate category totals
             const regularTotal = Object.values(regularMobs).reduce((sum, kills) => sum + kills, 0);
             const bossTotal = Object.values(bosses).reduce((sum, kills) => sum + kills, 0);
 
             // Display regular mobs
-            displayMobTable('Regular', regularMobs, regularTotal);
+            displayMobTable('Regular', regularMobs, regularTotal, prevRegularMobs);
 
             // Display bosses
-            displayMobTable('Bosses', bosses, bossTotal);
+            displayMobTable('Bosses', bosses, bossTotal, prevBosses);
         }
 
-        function displayMobTable(type, mobs, categoryTotal) {
+        function displayMobTable(type, mobs, categoryTotal, prevMobs = null) {
             const headerId = type === 'Bosses' ? 'killStatsBossesHead' : 'killStatsRegularHead';
             const bodyId = type === 'Bosses' ? 'killStatsBossesBody' : 'killStatsRegularBody';
 
@@ -1184,10 +1224,13 @@
                             ? ((kills / categoryTotal) * 100).toFixed(1)
                             : 0;
 
+                        const prevKills = prevMobs && prevMobs[mobKey] ? prevMobs[mobKey] : null;
+                        const killsDisplay = formatComparisonValue(kills, prevKills);
+
                         bodyHTML += `
                             <tr>
                                 <td class="map-name">${mobName}</td>
-                                <td style="text-align: center;">${kills.toLocaleString()}</td>
+                                <td style="text-align: center;">${killsDisplay}</td>
                                 <td style="text-align: center;">${percentage}%</td>
                             </tr>
                         `;
